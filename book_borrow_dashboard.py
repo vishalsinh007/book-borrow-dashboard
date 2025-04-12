@@ -7,11 +7,23 @@ from datetime import datetime, timedelta
 DATA_FILE = "student_data.csv"
 
 # Load existing data or initialize
+#def load_data():
+ #   if os.path.exists(DATA_FILE):
+  #      return pd.read_csv(DATA_FILE)
+   # else:
+    #    return pd.DataFrame(columns=["Name", "Roll No", "Department", "Book Name", "Issue Date", "Return Date"])
 def load_data():
     if os.path.exists(DATA_FILE):
-        return pd.read_csv(DATA_FILE)
+        try:
+            df = pd.read_csv(DATA_FILE)
+            if df.empty or df.columns.size == 0:
+                raise pd.errors.EmptyDataError
+            return df
+        except pd.errors.EmptyDataError:
+            return pd.DataFrame(columns=["Name", "Roll No", "Department", "Book Name", "Issue Date", "Return Date"])
     else:
         return pd.DataFrame(columns=["Name", "Roll No", "Department", "Book Name", "Issue Date", "Return Date"])
+
 
 # Save data to CSV
 def save_data():
