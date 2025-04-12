@@ -1,15 +1,28 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
+import os
 
-# Initialize session state for storing student data
-if "students" not in st.session_state:
-    st.session_state.students = []
+st.set_page_config(page_title="📚 Book Borrow Dashboard", layout="centered")
 
-# Helper to add a student
-def add_student(name, roll, dept, book, borrow_days):
+DATA_FILE = "borrow_data.csv"
+
+# 🔁 Load saved data
+def load_data():
+    if os.path.exists(DATA_FILE):
+        df = pd.read_csv(DATA_FILE, parse_dates=["Borrow Date", "Return Date"])
+        return df.to_dict(orient="records")
+    return []
+
+# 💾 Save data to CSV
+def save_data():
+    df = pd.DataFrame(st.session_state.students)
+    df.to_csv(DATA_FILE, index=False)
+
+# ➕ Add new student
+def add_student(name, roll, dept, book, days):
     borrow_date = datetime.now()
-    return_date = borrow_date + timedelta(days=borrow_days)
+    return_date = borrow_date + timedelta(days=days)
     st.session_state.students.append({
         "Name": name,
         "Roll No": roll,
@@ -19,37 +32,40 @@ def add_student(name, roll, dept, book, borrow_days):
         "Return Date": return_date
     })
 
-# Sidebar - Add student
-st.sidebar.header("📚 Add Borrower")
-with st.sidebar.form("add_student_form"):
+# 🔄 Initialize session state
+if "students" not in st.session_state:
+    st.session_state.students = load_data()
+
+# 📋 Sidebar - Add new entry
+with st.sidebar:
+    st.header("📌 Add New Borrow Entry")
     name = st.text_input("Student Name")
     roll = st.text_input("Roll Number")
     dept = st.text_input("Department")
-    book = st.text_input("Issued Book Name")
-    days = st.number_input("Borrow Days", min_value=1, max_value=60, value=7)
-    submitted = st.form_submit_button("Add")
-    if submitted and all([name, roll, dept, book]):
-        add_student(name, roll, dept, book, days)
-        st.success(f"{name} added successfully!")
+    book = st.text_input("Issued Book")
+    days = st.number_input("Borrow Days", min_value=1, max_value=30, value=7)
 
-# Home - Student List
-st.title("📘 Book Stall Borrow Dashboard")
-st.write("Click on a student to view or manage details:")
+    if st.button("Add Student"):
+        if name and roll and dept and book:
+            add_student(name, roll, dept, book, days)
+            save_data()
+            st.success(f"{name} added successfully!")
+        else:
+            st.warning("Please fill all fields.")
 
-# Convert session data to DataFrame
+# 🏠 Main - Student List
+st.title("📚 Book Borrow Dashboard")
 df = pd.DataFrame(st.session_state.students)
 
-# Add a column to calculate days left
 if not df.empty:
     df["Days Left"] = df["Return Date"].apply(lambda d: (d - datetime.now()).days)
-    df = df.sort_values("Days Left")  # Sort by return deadline
+    df = df.sort_values("Days Left")
 
-    # Select student from sorted list
-    selected = st.selectbox("Select Student", df["Name"])
+    selected = st.selectbox("📌 Select Student", df["Name"])
     student = next((s for s in st.session_state.students if s["Name"] == selected), None)
 
     if student:
-        st.subheader(f"Details for {student['Name']}")
+        st.subheader(f"📖 Details for {student['Name']}")
         st.write(f"**Roll No:** {student['Roll No']}")
         st.write(f"**Department:** {student['Department']}")
         st.write(f"**Issued Book:** {student['Book']}")
@@ -62,11 +78,13 @@ if not df.empty:
         else:
             st.info(f"📅 Days left: {remaining} day(s)")
 
-        # Extend date option
         extend = st.number_input("Extend Borrow Days", min_value=1, max_value=30, value=3)
         if st.button("Extend"):
             student["Return Date"] += timedelta(days=extend)
+            save_data()
             st.success("Return date extended!")
+
 else:
-    st.info("No students added yet.")
+    st.info("No students added yet. Use the sidebar to start.")
+
 
