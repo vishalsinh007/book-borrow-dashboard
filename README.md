@@ -16,9 +16,4 @@ This is a Streamlit-based dashboard developed to manage book borrowing during a 
 - Streamlit 🎈
 - Pandas 📊
 
-## 💻 How to Run
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-username/book-borrow-dashboard.git
-   cd book-borrow-dashboard
